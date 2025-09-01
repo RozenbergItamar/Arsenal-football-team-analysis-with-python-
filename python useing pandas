@@ -1,0 +1,909 @@
+## Project Description
+
+This project focuses on analyzing Arsenal’s performance in the Premier League from the 2020/21 season to the 2023/24 season. The aim is to gain a deeper understanding of Arsenal’s playing style by examining both their offensive and defensive aspects, with a special focus on the differences between home and away matches.
+
+## What the Analysis Includes
+
+- **Offensive Metrics:**
+  - Analysis of average goals scored, shots, shots on target, corners, and other offensive indicators, with data segmented by season.
+
+- **Defensive Metrics:**
+  - Analysis of the number of goals conceded, fouls, yellow cards, and red cards, along with comparisons between home and away matches.
+
+- **Home vs. Away Performance Comparison:**
+  - Evaluation of differences in performance based on match location, including win, draw, and loss percentages.
+
+- **Trend Identification:**
+  - Monitoring changes in performance over the seasons and presenting these trends through various graphs (line charts, bar charts, scatter plots, and pie charts) that illustrate distributions and trends.
+
+## Tools Used
+
+The analysis is conducted using Python, with:
+- **Pandas** for data manipulation and analysis.
+- **Matplotlib** and **Seaborn** for creating visualizations.
+
+This approach allows for a clear, visual presentation of the findings.
+
+import pandas as pd
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sb
+import xlrd
+df = pd.read_csv(r"C:\Users\User\OneDrive\Dokumente\9297.51\pandas\DATA\England .csv")
+df.info()
+df["Date"] = pd.to_datetime(df["Date"], format="%d/%m/%Y")
+df.info()
+df.head()
+df_2 = df[(df["Season"] >= "2020/21") & (df["Season"] <= "2023/24") &  ((df["HomeTeam"] == "Arsenal") | (df["AwayTeam"] == "Arsenal"))]
+df_3=df_2.sort_values('Date',ascending=True)
+df_3
+df_3["Match_ID"] = range(1, len(df_2) + 1)
+df_3
+df_arsenal=df_3.set_index('Match_ID')
+df_arsenal.info()
+df_arsenal
+df_arsenal.head(20)
+df_arsenal.describe(percentiles=[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]) 
+## Arsenal wins & Losses stats
+df_arsenal2=df_arsenal.copy()
+
+df_arsenal2["Home Win"] = (df_arsenal["FT Result"] == "H") & (df_arsenal["HomeTeam"] == "Arsenal")  #Arsenal Wins as home team  
+df_arsenal2["Home Loss"] = (df_arsenal["FT Result"] == "A") & (df_arsenal["HomeTeam"] == "Arsenal") #Arsenal Losses as home team  
+df_arsenal2["Home Draw"] = (df_arsenal["FT Result"] == "D") & (df_arsenal["HomeTeam"] == "Arsenal") #Arsenal Draws as home team  
+
+df_arsenal2["Away Win"] = (df_arsenal["FT Result"] == "A") & (df_arsenal["AwayTeam"] == "Arsenal")  #Arsenal Wins as away team  
+df_arsenal2["Away Loss"] = (df_arsenal["FT Result"] == "H") & (df_arsenal["AwayTeam"] == "Arsenal") #Arsenal Losses as away team  
+df_arsenal2["Away Draw"] = (df_arsenal["FT Result"] == "D") & (df_arsenal["AwayTeam"] == "Arsenal") #Arsenal Draws as away team  
+df_arsenal2["Games Played"] = df_arsenal2["FT Result"]
+df_arsenal2["G_wins"] = df_arsenal2["Home Win"] + df_arsenal2["Away Win"]
+df_arsenal2["G_losses"] = df_arsenal2["Home Loss"] + df_arsenal2["Away Loss"]
+df_arsenal2["G_Draws"] = df_arsenal2["Home Draw"] + df_arsenal2["Away Draw"]
+
+arsenal_stats= df_arsenal2.groupby("Season").agg({
+"Games Played":"count",
+"G_wins":'sum', 
+ "G_losses":'sum', 
+ "G_Draws":'sum'
+
+})
+arsenal_positions = {
+    "2020/21": 8,
+    "2021/22": 5,
+    "2022/23": 2,
+    "2023/24": 2
+}
+League_Winner= {
+    "2020/21":"Man City" ,
+    "2021/22":"Man City" ,
+    "2022/23":"Man City" ,
+    "2023/24":"Man City" 
+}
+arsenal_stats["Arsenal End League Position"] = arsenal_stats.index.map(arsenal_positions)
+arsenal_stats["League_Winner"]= arsenal_stats.index.map(League_Winner)
+arsenal_stats_home_away = df_arsenal2.groupby("Season").agg({
+    'HomeTeam': lambda x: (x == "Arsenal").sum(),  #Arsenal games as home team
+    'Home Win': 'sum',
+    'Home Loss': 'sum',
+    'Home Draw': 'sum',
+    'AwayTeam': lambda x: (x == "Arsenal").sum(),  #Arsenal games as away team
+    'Away Win': 'sum',
+    'Away Loss': 'sum',
+    'Away Draw': 'sum',
+    "Games Played":"count"
+}).rename(columns={
+    "HomeTeam": "Home Games",
+    "AwayTeam": "Away Games",
+    "Home Win": "Home Wins",
+    "Home Loss": "Home Losses",
+    "Home Draw": "Home Draws",
+    "Away Win": "Away Wins",
+    "Away Loss": "Away Losses",
+    "Away Draw": "Away Draws"
+})
+
+arsenal_stats
+arsenal_stats_home_away
+## Attack -Arsenal Offensive Metrics 
+df_arsenal_attack = df_arsenal.copy()
+df_arsenal_attack["Home Shots"] = df_arsenal["H Shots"] * (df_arsenal["HomeTeam"] == "Arsenal")
+df_arsenal_attack["Home SOT"] = df_arsenal["H SOT"] * (df_arsenal["HomeTeam"] == "Arsenal")
+df_arsenal_attack["Home Corners"] = df_arsenal["H Corners"] * (df_arsenal["HomeTeam"] == "Arsenal")
+df_arsenal_attack["Home Goals"] = df_arsenal["FTH Goals"] * (df_arsenal["HomeTeam"] == "Arsenal")
+
+df_arsenal_attack["Away Shots"] = df_arsenal["A Shots"] * (df_arsenal["AwayTeam"] == "Arsenal")
+df_arsenal_attack["Away SOT"] = df_arsenal["A SOT"] * (df_arsenal["AwayTeam"] == "Arsenal")
+df_arsenal_attack["Away Corners"] = df_arsenal["A Corners"] * (df_arsenal["AwayTeam"] == "Arsenal")
+df_arsenal_attack["Away Goals"] = df_arsenal["FTA Goals"] * (df_arsenal["AwayTeam"] == "Arsenal")
+
+df_arsenal_attack["Shots"] = df_arsenal_attack["Home Shots"] + df_arsenal_attack["Away Shots"]
+df_arsenal_attack["SOT"] = df_arsenal_attack["Home SOT"] +df_arsenal_attack["Away SOT"]
+df_arsenal_attack["Corners"] = df_arsenal_attack["Home Corners"] + df_arsenal_attack["Away Corners"]
+df_arsenal_attack["Goals"] = df_arsenal_attack["Home Goals"] + df_arsenal_attack["Away Goals"]
+arsenal_attack_metrics=df_arsenal_attack.groupby("Season").agg({
+"Shots" :"sum",
+"SOT" :"sum",
+"Corners" :"sum",
+"Goals" :"sum"
+
+})
+
+arsenal_attack_metrics_home_away = df_arsenal_attack.groupby("Season")[
+    ["Home Shots", "Home SOT", "Home Corners", "Home Goals",
+     "Away Shots", "Away SOT", "Away Corners", "Away Goals"]
+].sum()
+#SOT- shots on target
+arsenal_attack_metrics
+arsenal_attack_metrics_home_away
+## Defense- Arsenal Defensive Metrics
+df_arsenal_defense = df_arsenal.copy()
+df_arsenal_defense["Home Fouls"] = df_arsenal["H Fouls"] * (df_arsenal["HomeTeam"] == "Arsenal")
+df_arsenal_defense["Home Yellow Cards"] = df_arsenal["H Yellow"] * (df_arsenal["HomeTeam"] == "Arsenal")
+df_arsenal_defense["Home Red Cards"] = df_arsenal["H Red"] * (df_arsenal["HomeTeam"] == "Arsenal")
+df_arsenal_defense["Home Goals Conceded"] = df_arsenal["FTA Goals"] * (df_arsenal["HomeTeam"] == "Arsenal")
+
+df_arsenal_defense["Away Fouls"] = df_arsenal["A Fouls"] * (df_arsenal["AwayTeam"] == "Arsenal")
+df_arsenal_defense["Away Yellow Cards"] = df_arsenal["A Yellow"] * (df_arsenal["AwayTeam"] == "Arsenal")
+df_arsenal_defense["Away Red Cards"] = df_arsenal["A Red"] * (df_arsenal["AwayTeam"] == "Arsenal")
+df_arsenal_defense["Away Goals Conceded"] = df_arsenal["FTH Goals"] * (df_arsenal["AwayTeam"] == "Arsenal")
+df_arsenal_defense["Fouls"] = df_arsenal_defense["Home Fouls"] + df_arsenal_defense["Away Fouls"]
+df_arsenal_defense["Yellow Cards"] = df_arsenal_defense["Home Yellow Cards"] + df_arsenal_defense["Away Yellow Cards"]
+df_arsenal_defense["Red Cards"] = df_arsenal_defense["Home Red Cards"] + df_arsenal_defense["Away Red Cards"]
+df_arsenal_defense["Goals Conceded"] = df_arsenal_defense["Home Goals Conceded"] + df_arsenal_defense["Away Goals Conceded"]
+arsenal_defense_metrics=df_arsenal_defense.groupby("Season").agg({
+"Fouls" :"sum",
+"Yellow Cards" :"sum",
+"Red Cards" :"sum",
+"Goals Conceded" :"sum"
+
+})
+arsenal_defense_metrics_home_away = df_arsenal_defense.groupby("Season")[
+    ["Home Fouls", "Home Yellow Cards", "Home Red Cards", "Home Goals Conceded", 
+     "Away Fouls", "Away Yellow Cards", "Away Red Cards", "Away Goals Conceded"]
+].sum()
+arsenal_defense_metrics
+arsenal_defense_metrics_home_away
+Move to Data Summary to see the analyzed data , below all seasons Analysis
+## Season 2020/21
+Win/Lose Stats
+df_20_21 =df_arsenal2[df_arsenal2["Season"] == "2020/21"]
+df_20_21.head(5)
+stats_20_21=df_20_21.agg({
+"Games Played":"count",
+"G_wins":'sum', 
+ "G_losses":'sum', 
+ "G_Draws":'sum'
+
+})
+A_H_stats_20_21=df_20_21.agg({
+    'Home Win': 'sum',
+    'Home Loss': 'sum',
+    'Home Draw': 'sum',
+    'Away Win': 'sum',
+    'Away Loss': 'sum',
+    'Away Draw': 'sum',
+    "Games Played":"count"
+})
+A_H_stats_20_21["Home Games"] = (df_20_21["HomeTeam"] == "Arsenal").sum()
+A_H_stats_20_21["Away Games"] = (df_20_21["AwayTeam"] == "Arsenal").sum()
+stats_20_21
+A_H_stats_20_21
+Attack Stats
+df_attack_20_21=df_arsenal_attack[df_arsenal_attack["Season"] == "2020/21"]
+attack_metrics_20_21= df_attack_20_21.agg({
+"Shots" :"sum",
+"SOT" :"sum",
+"Corners" :"sum",
+"Goals" :"sum"
+
+})
+attack_metrics_home_away_20_21=df_attack_20_21.agg({
+
+"Home Shots" :"sum",
+"Home SOT":"sum", 
+"Home Corners":"sum", 
+"Home Goals":"sum",
+"Away Shots":"sum", 
+"Away SOT":"sum", 
+"Away Corners":"sum", 
+"Away Goals":"sum"
+
+})
+attack_metrics_20_21
+attack_metrics_home_away_20_21
+Attack_Analysis= attack_metrics_20_21.div(A_H_stats_20_21["Games Played"])
+Attack_Analysis_20_21 = Attack_Analysis.rename({
+    "Shots": "Shots per Game",
+    "SOT": "SOT per Game",
+    "Corners": "Corners per Game",
+    "Goals": "Goals per Game"
+})
+Attack_Analysis_home_away_20_21 = pd.DataFrame({
+    "Home Shots per Game": [attack_metrics_home_away_20_21["Home Shots"] / A_H_stats_20_21["Home Games"]],
+    "Home SOT per Game": [attack_metrics_home_away_20_21["Home SOT"] / A_H_stats_20_21["Home Games"]],
+    "Home Corners per Game": [attack_metrics_home_away_20_21["Home Corners"] / A_H_stats_20_21["Home Games"]],
+    "Home Goals per Game": [attack_metrics_home_away_20_21["Home Goals"] / A_H_stats_20_21["Home Games"]],
+    
+    "Away Shots per Game": [attack_metrics_home_away_20_21["Away Shots"] / A_H_stats_20_21["Away Games"]],
+    "Away SOT per Game": [attack_metrics_home_away_20_21["Away SOT"] / A_H_stats_20_21["Away Games"]],
+    "Away Corners per Game": [attack_metrics_home_away_20_21["Away Corners"] / A_H_stats_20_21["Away Games"]],
+    "Away Goals per Game": [attack_metrics_home_away_20_21["Away Goals"] / A_H_stats_20_21["Away Games"]]
+})
+
+Attack_Analysis_20_21
+Attack_Analysis_home_away_20_21
+Defense Stats
+df_Defense_20_21=df_arsenal_defense[df_arsenal_defense["Season"] == "2020/21"]
+defense_metrics_20_21=df_Defense_20_21.agg({
+"Fouls" :"sum",
+"Yellow Cards" :"sum",
+"Red Cards" :"sum",
+"Goals Conceded" :"sum"
+
+})
+defense_metrics_home_away_20_21=df_Defense_20_21.agg({
+"Home Fouls" :"sum",
+"Home Yellow Cards":"sum",
+"Home Red Cards":"sum", 
+"Home Goals Conceded":"sum", 
+"Away Fouls":"sum", 
+"Away Yellow Cards":"sum", 
+"Away Red Cards":"sum", 
+"Away Goals Conceded":"sum"
+    
+})
+defense_metrics_20_21
+defense_metrics_home_away_20_21
+defense_Analysis_20_21= defense_metrics_20_21.div(A_H_stats_20_21["Games Played"])
+defense_Analysis=defense_Analysis_20_21.rename({
+'Fouls' : 'Fouls Per Game',           
+'Yellow Cards':  'Yellow Cards Per Game',   
+'Red Cards' :   'Red Cards Per Game',     
+'Goals Conceded': 'Goals Conceded Per Game'
+
+})
+Defense_Analysis_home_away_20_21 = pd.DataFrame({
+    "Home Fouls per Game": [defense_metrics_home_away_20_21["Home Fouls"] / A_H_stats_20_21["Home Games"]],
+    "Home Yellow Cards per Game": [defense_metrics_home_away_20_21["Home Yellow Cards"] / A_H_stats_20_21["Home Games"]],
+    "Home Red Cards per Game": [defense_metrics_home_away_20_21["Home Red Cards"] / A_H_stats_20_21["Home Games"]],
+    "Home Goals Conceded per Game": [defense_metrics_home_away_20_21["Home Goals Conceded"] / A_H_stats_20_21["Home Games"]],
+
+    "Away Fouls per Game": [defense_metrics_home_away_20_21["Away Fouls"] / A_H_stats_20_21["Away Games"]],
+    "Away Yellow Cards per Game": [defense_metrics_home_away_20_21["Away Yellow Cards"] / A_H_stats_20_21["Away Games"]],
+    "Away Red Cards per Game": [defense_metrics_home_away_20_21["Away Red Cards"] / A_H_stats_20_21["Away Games"]],
+    "Away Goals Conceded per Game": [defense_metrics_home_away_20_21["Away Goals Conceded"] / A_H_stats_20_21["Away Games"]]
+})
+defense_Analysis_20_21
+Defense_Analysis_home_away_20_21
+## Seson 2021/22
+Win/Lose Stats
+df_21_22 =df_arsenal2[df_arsenal2["Season"] == "2021/22"]
+stats_21_22=df_21_22.agg({
+"Games Played":"count",
+"G_wins":'sum', 
+ "G_losses":'sum', 
+ "G_Draws":'sum'
+
+})
+A_H_stats_21_22=df_21_22.agg({
+    'Home Win': 'sum',
+    'Home Loss': 'sum',
+    'Home Draw': 'sum',
+    'Away Win': 'sum',
+    'Away Loss': 'sum',
+    'Away Draw': 'sum',
+    "Games Played":"count"
+})
+A_H_stats_21_22["Home Games"] = (df_21_22["HomeTeam"] == "Arsenal").sum()
+A_H_stats_21_22["Away Games"] = (df_21_22["AwayTeam"] == "Arsenal").sum()
+stats_21_22
+A_H_stats_21_22
+Attack Stats
+df_attack_21_22=df_arsenal_attack[df_arsenal_attack["Season"] == "2021/22"]
+attack_metrics_21_22= df_attack_21_22.agg({
+"Shots" :"sum",
+"SOT" :"sum",
+"Corners" :"sum",
+"Goals" :"sum"
+
+})
+attack_metrics_home_away_21_22=df_attack_21_22.agg({
+
+"Home Shots" :"sum",
+"Home SOT":"sum", 
+"Home Corners":"sum", 
+"Home Goals":"sum",
+"Away Shots":"sum", 
+"Away SOT":"sum", 
+"Away Corners":"sum", 
+"Away Goals":"sum"
+
+})
+attack_metrics_21_22
+attack_metrics_home_away_21_22
+Attack_Analysis_21_22= attack_metrics_21_22.div(A_H_stats_21_22["Games Played"])
+Attack_Analysis_21_22 = Attack_Analysis_21_22.rename({
+    "Shots": "Shots per Game",
+    "SOT": "SOT per Game",
+    "Corners": "Corners per Game",
+    "Goals": "Goals per Game"
+})
+Attack_Analysis_21_22
+Attack_Analysis_home_away_21_22 = pd.DataFrame({
+    "Home Shots per Game": [attack_metrics_home_away_21_22["Home Shots"] / A_H_stats_21_22["Home Games"]],
+    "Home SOT per Game": [attack_metrics_home_away_21_22["Home SOT"] / A_H_stats_21_22["Home Games"]],
+    "Home Corners per Game": [attack_metrics_home_away_21_22["Home Corners"] / A_H_stats_21_22["Home Games"]],
+    "Home Goals per Game": [attack_metrics_home_away_21_22["Home Goals"] / A_H_stats_21_22["Home Games"]],
+    
+    "Away Shots per Game": [attack_metrics_home_away_21_22["Away Shots"] / A_H_stats_21_22["Away Games"]],
+    "Away SOT per Game": [attack_metrics_home_away_21_22["Away SOT"] / A_H_stats_21_22["Away Games"]],
+    "Away Corners per Game": [attack_metrics_home_away_21_22["Away Corners"] / A_H_stats_21_22["Away Games"]],
+    "Away Goals per Game": [attack_metrics_home_away_21_22["Away Goals"] / A_H_stats_21_22["Away Games"]]
+})
+
+Attack_Analysis_home_away_21_22
+Defenes Stats
+df_Defense_21_22=df_arsenal_defense[df_arsenal_defense["Season"] == "2021/22"]
+defense_metrics_21_22=df_Defense_21_22.agg({
+"Fouls" :"sum",
+"Yellow Cards" :"sum",
+"Red Cards" :"sum",
+"Goals Conceded" :"sum"
+
+})
+defense_metrics_home_away_21_22=df_Defense_21_22.agg({
+"Home Fouls" :"sum",
+"Home Yellow Cards":"sum",
+"Home Red Cards":"sum", 
+"Home Goals Conceded":"sum", 
+"Away Fouls":"sum", 
+"Away Yellow Cards":"sum", 
+"Away Red Cards":"sum", 
+"Away Goals Conceded":"sum"
+    
+})
+defense_metrics_21_22
+defense_metrics_home_away_21_22
+defense_Analysis_21_22= defense_metrics_21_22.div(A_H_stats_21_22["Games Played"])
+defense_Analysis_21_22=defense_Analysis.rename({
+'Fouls' : 'Fouls Per Game',           
+'Yellow Cards':  'Yellow Cards Per Game',   
+'Red Cards' :   'Red Cards Per Game',     
+'Goals Conceded': 'Goals Conceded Per Game'
+
+})
+Defense_Analysis_home_away_21_22 = pd.DataFrame({
+    "Home Fouls per Game": [defense_metrics_home_away_21_22["Home Fouls"] / A_H_stats_21_22["Home Games"]],
+    "Home Yellow Cards per Game": [defense_metrics_home_away_21_22["Home Yellow Cards"] / A_H_stats_21_22["Home Games"]],
+    "Home Red Cards per Game": [defense_metrics_home_away_21_22["Home Red Cards"] / A_H_stats_21_22["Home Games"]],
+    "Home Goals Conceded per Game": [defense_metrics_home_away_21_22["Home Goals Conceded"] / A_H_stats_21_22["Home Games"]],
+
+    "Away Fouls per Game": [defense_metrics_home_away_21_22["Away Fouls"] / A_H_stats_21_22["Away Games"]],
+    "Away Yellow Cards per Game": [defense_metrics_home_away_21_22["Away Yellow Cards"] / A_H_stats_21_22["Away Games"]],
+    "Away Red Cards per Game": [defense_metrics_home_away_21_22["Away Red Cards"] / A_H_stats_21_22["Away Games"]],
+    "Away Goals Conceded per Game": [defense_metrics_home_away_21_22["Away Goals Conceded"] / A_H_stats_21_22["Away Games"]]
+})
+defense_Analysis_21_22
+Defense_Analysis_home_away_21_22
+## Season 22/23
+
+Win/Lose Stats
+df_22_23 =df_arsenal2[df_arsenal2["Season"] == "2022/23"]
+stats_22_23=df_22_23.agg({
+"Games Played":"count",
+"G_wins":'sum', 
+ "G_losses":'sum', 
+ "G_Draws":'sum'
+
+})
+A_H_stats_22_23=df_22_23.agg({
+    'Home Win': 'sum',
+    'Home Loss': 'sum',
+    'Home Draw': 'sum',
+    'Away Win': 'sum',
+    'Away Loss': 'sum',
+    'Away Draw': 'sum',
+    "Games Played":"count"
+})
+A_H_stats_22_23["Home Games"] = (df_22_23["HomeTeam"] == "Arsenal").sum()
+A_H_stats_22_23["Away Games"] = (df_22_23["AwayTeam"] == "Arsenal").sum()
+stats_22_23
+A_H_stats_22_23
+Attack Stats
+df_attack_22_23=df_arsenal_attack[df_arsenal_attack["Season"] == "2022/23"]
+attack_metrics_22_23= df_attack_22_23.agg({
+"Shots" :"sum",
+"SOT" :"sum",
+"Corners" :"sum",
+"Goals" :"sum"
+
+})
+attack_metrics_home_away_22_23=df_attack_22_23.agg({
+
+"Home Shots" :"sum",
+"Home SOT":"sum", 
+"Home Corners":"sum", 
+"Home Goals":"sum",
+"Away Shots":"sum", 
+"Away SOT":"sum", 
+"Away Corners":"sum", 
+"Away Goals":"sum"
+
+})
+attack_metrics_22_23
+attack_metrics_home_away_22_23
+Attack_Analysis_22_23= attack_metrics_22_23.div(A_H_stats_22_23["Games Played"])
+Attack_Analysis_22_23 = Attack_Analysis_22_23.rename({
+    "Shots": "Shots per Game",
+    "SOT": "SOT per Game",
+    "Corners": "Corners per Game",
+    "Goals": "Goals per Game"
+})
+Attack_Analysis_22_23
+Attack_Analysis_home_away_22_23 = pd.DataFrame({
+    "Home Shots per Game": [attack_metrics_home_away_22_23["Home Shots"] / A_H_stats_22_23["Home Games"]],
+    "Home SOT per Game": [attack_metrics_home_away_22_23["Home SOT"] / A_H_stats_22_23["Home Games"]],
+    "Home Corners per Game": [attack_metrics_home_away_22_23["Home Corners"] / A_H_stats_22_23["Home Games"]],
+    "Home Goals per Game": [attack_metrics_home_away_22_23["Home Goals"] / A_H_stats_22_23["Home Games"]],
+    
+    "Away Shots per Game": [attack_metrics_home_away_22_23["Away Shots"] / A_H_stats_22_23["Away Games"]],
+    "Away SOT per Game": [attack_metrics_home_away_22_23["Away SOT"] / A_H_stats_22_23["Away Games"]],
+    "Away Corners per Game": [attack_metrics_home_away_22_23["Away Corners"] / A_H_stats_22_23["Away Games"]],
+    "Away Goals per Game": [attack_metrics_home_away_22_23["Away Goals"] / A_H_stats_22_23["Away Games"]]
+})
+
+Attack_Analysis_home_away_22_23
+Defenes Stats
+df_Defense_22_23=df_arsenal_defense[df_arsenal_defense["Season"] == "2022/23"]
+defense_metrics_22_23=df_Defense_22_23.agg({
+"Fouls" :"sum",
+"Yellow Cards" :"sum",
+"Red Cards" :"sum",
+"Goals Conceded" :"sum"
+
+})
+defense_metrics_home_away_22_23=df_Defense_22_23.agg({
+"Home Fouls" :"sum",
+"Home Yellow Cards":"sum",
+"Home Red Cards":"sum", 
+"Home Goals Conceded":"sum", 
+"Away Fouls":"sum", 
+"Away Yellow Cards":"sum", 
+"Away Red Cards":"sum", 
+"Away Goals Conceded":"sum"
+    
+})
+defense_metrics_22_23
+defense_metrics_home_away_22_23
+defense_Analysis_22_23= defense_metrics_22_23.div(A_H_stats_22_23["Games Played"])
+defense_Analysis_22_23=defense_Analysis.rename({
+'Fouls' : 'Fouls Per Game',           
+'Yellow Cards':  'Yellow Cards Per Game',   
+'Red Cards' :   'Red Cards Per Game',     
+'Goals Conceded': 'Goals Conceded Per Game'
+
+})
+Defense_Analysis_home_away_22_23 = pd.DataFrame({
+    "Home Fouls per Game": [defense_metrics_home_away_22_23["Home Fouls"] / A_H_stats_22_23["Home Games"]],
+    "Home Yellow Cards per Game": [defense_metrics_home_away_22_23["Home Yellow Cards"] / A_H_stats_22_23["Home Games"]],
+    "Home Red Cards per Game": [defense_metrics_home_away_22_23["Home Red Cards"] / A_H_stats_22_23["Home Games"]],
+    "Home Goals Conceded per Game": [defense_metrics_home_away_22_23["Home Goals Conceded"] / A_H_stats_22_23["Home Games"]],
+
+    "Away Fouls per Game": [defense_metrics_home_away_22_23["Away Fouls"] / A_H_stats_22_23["Away Games"]],
+    "Away Yellow Cards per Game": [defense_metrics_home_away_22_23["Away Yellow Cards"] / A_H_stats_22_23["Away Games"]],
+    "Away Red Cards per Game": [defense_metrics_home_away_22_23["Away Red Cards"] / A_H_stats_22_23["Away Games"]],
+    "Away Goals Conceded per Game": [defense_metrics_home_away_22_23["Away Goals Conceded"] / A_H_stats_22_23["Away Games"]]
+})
+defense_Analysis_22_23
+Defense_Analysis_home_away_22_23
+## Season 23/24
+Win/Lose Stats
+df_23_24 =df_arsenal2[df_arsenal2["Season"] == "2023/24"]
+stats_23_24=df_23_24.agg({
+"Games Played":"count",
+"G_wins":'sum', 
+ "G_losses":'sum', 
+ "G_Draws":'sum'
+
+})
+A_H_stats_23_24=df_23_24.agg({
+    'Home Win': 'sum',
+    'Home Loss': 'sum',
+    'Home Draw': 'sum',
+    'Away Win': 'sum',
+    'Away Loss': 'sum',
+    'Away Draw': 'sum',
+    "Games Played":"count"
+})
+A_H_stats_23_24["Home Games"] = (df_23_24["HomeTeam"] == "Arsenal").sum()
+A_H_stats_23_24["Away Games"] = (df_23_24["AwayTeam"] == "Arsenal").sum()
+stats_23_24
+A_H_stats_23_24
+Attack Stats
+df_attack_23_24=df_arsenal_attack[df_arsenal_attack["Season"] == "2023/24"]
+attack_metrics_23_24= df_attack_23_24.agg({
+"Shots" :"sum",
+"SOT" :"sum",
+"Corners" :"sum",
+"Goals" :"sum"
+
+})
+attack_metrics_home_away_23_24=df_attack_23_24.agg({
+
+"Home Shots" :"sum",
+"Home SOT":"sum", 
+"Home Corners":"sum", 
+"Home Goals":"sum",
+"Away Shots":"sum", 
+"Away SOT":"sum", 
+"Away Corners":"sum", 
+"Away Goals":"sum"
+
+})
+attack_metrics_23_24
+attack_metrics_home_away_23_24
+Attack_Analysis_23_24= attack_metrics_23_24.div(A_H_stats_23_24["Games Played"])
+Attack_Analysis_23_24 = Attack_Analysis_23_24.rename({
+    "Shots": "Shots per Game",
+    "SOT": "SOT per Game",
+    "Corners": "Corners per Game",
+    "Goals": "Goals per Game"
+})
+Attack_Analysis_23_24
+Attack_Analysis_home_away_23_24 = pd.DataFrame({
+    "Home Shots per Game": [attack_metrics_home_away_23_24["Home Shots"] / A_H_stats_23_24["Home Games"]],
+    "Home SOT per Game": [attack_metrics_home_away_23_24["Home SOT"] / A_H_stats_23_24["Home Games"]],
+    "Home Corners per Game": [attack_metrics_home_away_23_24["Home Corners"] / A_H_stats_23_24["Home Games"]],
+    "Home Goals per Game": [attack_metrics_home_away_23_24["Home Goals"] / A_H_stats_23_24["Home Games"]],
+    
+    "Away Shots per Game": [attack_metrics_home_away_23_24["Away Shots"] / A_H_stats_23_24["Away Games"]],
+    "Away SOT per Game": [attack_metrics_home_away_23_24["Away SOT"] / A_H_stats_23_24["Away Games"]],
+    "Away Corners per Game": [attack_metrics_home_away_23_24["Away Corners"] / A_H_stats_23_24["Away Games"]],
+    "Away Goals per Game": [attack_metrics_home_away_23_24["Away Goals"] / A_H_stats_23_24["Away Games"]]
+})
+
+Attack_Analysis_home_away_23_24
+Defenes Stats
+df_Defense_23_24=df_arsenal_defense[df_arsenal_defense["Season"] == "2023/24"]
+defense_metrics_23_24=df_Defense_23_24.agg({
+"Fouls" :"sum",
+"Yellow Cards" :"sum",
+"Red Cards" :"sum",
+"Goals Conceded" :"sum"
+
+})
+defense_metrics_home_away_23_24=df_Defense_23_24.agg({
+"Home Fouls" :"sum",
+"Home Yellow Cards":"sum",
+"Home Red Cards":"sum", 
+"Home Goals Conceded":"sum", 
+"Away Fouls":"sum", 
+"Away Yellow Cards":"sum", 
+"Away Red Cards":"sum", 
+"Away Goals Conceded":"sum"
+    
+})
+defense_metrics_23_24
+defense_metrics_home_away_23_24
+defense_Analysis_23_24= defense_metrics_23_24.div(A_H_stats_23_24["Games Played"])
+defense_Analysis_23_24=defense_Analysis.rename({
+'Fouls' : 'Fouls Per Game',           
+'Yellow Cards':  'Yellow Cards Per Game',   
+'Red Cards' :   'Red Cards Per Game',     
+'Goals Conceded': 'Goals Conceded Per Game'
+
+})
+Defense_Analysis_home_away_23_24 = pd.DataFrame({
+    "Home Fouls per Game": [defense_metrics_home_away_23_24["Home Fouls"] / A_H_stats_23_24["Home Games"]],
+    "Home Yellow Cards per Game": [defense_metrics_home_away_23_24["Home Yellow Cards"] / A_H_stats_23_24["Home Games"]],
+    "Home Red Cards per Game": [defense_metrics_home_away_23_24["Home Red Cards"] / A_H_stats_23_24["Home Games"]],
+    "Home Goals Conceded per Game": [defense_metrics_home_away_23_24["Home Goals Conceded"] / A_H_stats_23_24["Home Games"]],
+
+    "Away Fouls per Game": [defense_metrics_home_away_23_24["Away Fouls"] / A_H_stats_23_24["Away Games"]],
+    "Away Yellow Cards per Game": [defense_metrics_home_away_23_24["Away Yellow Cards"] / A_H_stats_23_24["Away Games"]],
+    "Away Red Cards per Game": [defense_metrics_home_away_23_24["Away Red Cards"] / A_H_stats_23_24["Away Games"]],
+    "Away Goals Conceded per Game": [defense_metrics_home_away_23_24["Away Goals Conceded"] / A_H_stats_23_24["Away Games"]]
+})
+defense_Analysis_23_24
+Defense_Analysis_home_away_23_24
+## Data Summary
+
+
+This analysis is structured into two main sections: **Offense** and **Defense**, each examined on a seasonal basis. The data covers Arsenal’s performance in the Premier League from the 2020/21 season to the 2023/24 season.
+
+### Offensive Analysis
+- **Seasonal Analysis:**  
+  For each season, key offensive metrics are calculated and analyzed, including:
+  - **Average Goals Scored per Game:** Total goals scored divided by the number of matches.
+  - **Shots and Shots on Target:** Total number of shots and shots on target per match.
+  - **Corners:** Total corner kicks per game.
+  
+  These metrics are visualized using line charts and scatter plots to identify trends and measure offensive effectiveness over time.
+
+### Defensive Analysis
+- **Seasonal Analysis:**  
+  Defensive performance is examined on a seasonal basis by analyzing:
+  - **Goals Conceded per Game:** Total goals conceded divided by the number of matches.
+  - **Fouls, Yellow Cards, and Red Cards:** Total numbers of fouls and cards received per game.
+  
+  Bar charts and other visualizations are used to compare defensive performance between home and away matches, as well as to track changes in defensive discipline over the seasons.
+
+### Aggregated Summary
+After conducting seasonal analyses, the data from all seasons is aggregated to provide an overall summary that includes:
+- **Overall Offensive and Defensive Trends:** An integrated view highlighting how Arsenal’s performance has evolved across all seasons.
+- **Comparative Metrics:** Aggregated metrics enabling comparisons between home and away performances, as well as between offensive output and defensive solidity.
+
+This structured approach provides a comprehensive understanding of Arsenal’s tactical performance, showcasing both seasonal variations and overall trends across multiple seasons.
+
+Attack stats
+Attack_Analysis_23_24
+Attack_Analysis_22_23
+Attack_Analysis_21_22
+Attack_Analysis_20_21
+arsenal_attack_metrics
+Home/Away Attack Stats
+Attack_Analysis_home_away_23_24
+Attack_Analysis_home_away_22_23
+Attack_Analysis_home_away_21_22
+Attack_Analysis_home_away_20_21
+arsenal_attack_metrics_home_away
+Defense Stats
+defense_Analysis_23_24
+defense_Analysis_22_23
+defense_Analysis_21_22
+defense_Analysis_20_21
+arsenal_defense_metrics
+Home/Away Defence Stats
+Defense_Analysis_home_away_23_24
+Defense_Analysis_home_away_22_23
+Defense_Analysis_home_away_21_22
+Defense_Analysis_home_away_20_21
+arsenal_defense_metrics_home_away
+## Visualizations
+import matplotlib.pyplot as plt
+
+# Calculate the total number of games per season from the Arsenal matches DataFrame
+games_per_season = df_arsenal.groupby("Season").size()  
+
+# Aggregate offensive metrics (goals scored) per season from the Arsenal attack DataFrame
+attack_per_game = df_arsenal_attack.groupby("Season").agg({
+    "Home Goals": "sum",   # Sum of goals scored at home
+    "Away Goals": "sum"    # Sum of goals scored away
+})
+
+# Calculate average goals per game for home and away matches
+attack_per_game["Home Goals per Game"] = attack_per_game["Home Goals"] / games_per_season
+attack_per_game["Away Goals per Game"] = attack_per_game["Away Goals"] / games_per_season
+
+# Aggregate defensive metrics (goals conceded) per season from the Arsenal defense DataFrame
+defense_per_game = df_arsenal_defense.groupby("Season").agg({
+    "Home Goals Conceded": "sum",  # Sum of goals conceded at home
+    "Away Goals Conceded": "sum"   # Sum of goals conceded away
+})
+
+# Calculate average goals conceded per game for home and away matches
+defense_per_game["Home Goals Conceded per Game"] = defense_per_game["Home Goals Conceded"] / games_per_season
+defense_per_game["Away Goals Conceded per Game"] = defense_per_game["Away Goals Conceded"] / games_per_season
+
+# Create a figure to plot the trends
+plt.figure(figsize=(10,6))
+
+# Plot average home goals scored per game over the seasons
+plt.plot(attack_per_game.index, attack_per_game["Home Goals per Game"], marker='o', label="Home Goals Scored")
+# Plot average away goals scored per game over the seasons
+plt.plot(attack_per_game.index, attack_per_game["Away Goals per Game"], marker='s', label="Away Goals Scored")
+
+# Plot average home goals conceded per game over the seasons
+plt.plot(defense_per_game.index, defense_per_game["Home Goals Conceded per Game"], marker='o', linestyle='--', label="Home Goals Conceded")
+# Plot average away goals conceded per game over the seasons
+plt.plot(defense_per_game.index, defense_per_game["Away Goals Conceded per Game"], marker='s', linestyle='--', label="Away Goals Conceded")
+
+# Set the labels and title for the plot
+plt.xlabel("Season")
+plt.ylabel("Average Goals per Game")
+plt.title("Arsenal Goals Scored & Conceded per Game by Season")
+
+# Add a legend and grid to the plot for clarity
+plt.legend()
+plt.grid(True)
+
+# Display the plot
+plt.show()
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# Assume that df_arsenal_attack contains the columns: Season, Shots, and Goals
+# Create a FacetGrid to display each season in a separate subplot
+g = sns.FacetGrid(df_arsenal_attack, col="Season", col_wrap=2, height=4, aspect=1.2)
+
+# Plot scatter points for each match in each season
+g = g.map(sns.scatterplot, "Shots", "Goals", color="blue", s=50)
+
+# Add a regression line for each season (without plotting additional points)
+g = g.map(sns.regplot, "Shots", "Goals", scatter=False, color="red", truncate=True)
+
+# Set the axis labels
+g.set_axis_labels("Shots per Match", "Goals per Match")
+
+# Set a main title for the entire figure
+g.fig.suptitle("Shots vs Goals by Season", fontsize=16)
+
+# Adjust the subplots to ensure the title does not overlap with the plots
+g.fig.subplots_adjust(top=0.9)
+
+# Display the plot
+plt.show()
+
+
+arsenal_defense_metrics_plot = arsenal_defense_metrics.reset_index()
+
+plt.figure(figsize=(10,6))
+bar_width = 0.2
+x = np.arange(len(arsenal_defense_metrics_plot["Season"]))
+
+plt.bar(x - 1.5*bar_width, arsenal_defense_metrics_plot["Fouls"], bar_width, label="Fouls", color="gray")
+plt.bar(x - 0.5*bar_width, arsenal_defense_metrics_plot["Yellow Cards"], bar_width, label="Yellow Cards", color="gold")
+plt.bar(x + 0.5*bar_width, arsenal_defense_metrics_plot["Red Cards"], bar_width, label="Red Cards", color="red")
+plt.bar(x + 1.5*bar_width, arsenal_defense_metrics_plot["Goals Conceded"], bar_width, label="Goals Conceded", color="purple")
+
+plt.xlabel("Season")
+plt.ylabel("Total Count")
+plt.title("Arsenal Defensive Metrics by Season")
+plt.xticks(x, arsenal_defense_metrics_plot["Season"])
+plt.legend()
+plt.grid(axis="y")
+plt.show()
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+# נניח ש- arsenal_stats_home_away מכיל את הנתונים הבאים לכל עונה:
+# "Home Games", "Away Games", "Home Wins", "Away Wins", "Home Losses", "Away Losses", "Home Draws", "Away Draws"
+
+# חישוב אחוזי התוצאות עבור משחקי בית
+home_win_pct = (arsenal_stats_home_away["Home Wins"] / arsenal_stats_home_away["Home Games"]) * 100
+home_draw_pct = (arsenal_stats_home_away["Home Draws"] / arsenal_stats_home_away["Home Games"]) * 100
+home_loss_pct = (arsenal_stats_home_away["Home Losses"] / arsenal_stats_home_away["Home Games"]) * 100
+
+# חישוב אחוזי התוצאות עבור משחקי חוץ
+away_win_pct = (arsenal_stats_home_away["Away Wins"] / arsenal_stats_home_away["Away Games"]) * 100
+away_draw_pct = (arsenal_stats_home_away["Away Draws"] / arsenal_stats_home_away["Away Games"]) * 100
+away_loss_pct = (arsenal_stats_home_away["Away Losses"] / arsenal_stats_home_away["Away Games"]) * 100
+
+labels = arsenal_stats_home_away.index  # העונות
+x = np.arange(len(labels))
+width = 0.35  # רוחב כל עמודה
+
+fig, ax = plt.subplots(figsize=(10,6))
+
+# גרף מוערם למשחקי בית: שלוש קטגוריות (נצחונות, תיקו, הפסדים)
+ax.bar(x - width/2, home_win_pct, width, label="Home Win %", color="blue")
+ax.bar(x - width/2, home_draw_pct, width, bottom=home_win_pct, label="Home Draw %", color="green", alpha=0.7)
+ax.bar(x - width/2, home_loss_pct, width, bottom=(home_win_pct + home_draw_pct), label="Home Loss %", color="red", alpha=0.7)
+
+# גרף מוערם למשחקי חוץ: שלוש קטגוריות
+ax.bar(x + width/2, away_win_pct, width, label="Away Win %", color="cyan")
+ax.bar(x + width/2, away_draw_pct, width, bottom=away_win_pct, label="Away Draw %", color="lightgreen", alpha=0.7)
+ax.bar(x + width/2, away_loss_pct, width, bottom=(away_win_pct + away_draw_pct), label="Away Loss %", color="magenta", alpha=0.7)
+
+ax.set_xlabel("Season")
+ax.set_ylabel("Percentage")
+ax.set_title("Arsenal Home vs Away Match Outcome Percentages (Wins, Draws, Losses)")
+ax.set_xticks(x)
+ax.set_xticklabels(labels)
+ax.legend(loc="upper right", fontsize=8)
+ax.grid(axis="y")
+plt.show()
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+# Calculate the percentages for home match outcomes:
+home_win_pct = (arsenal_stats_home_away["Home Wins"] / arsenal_stats_home_away["Home Games"]) * 100
+home_draw_pct = (arsenal_stats_home_away["Home Draws"] / arsenal_stats_home_away["Home Games"]) * 100
+home_loss_pct = (arsenal_stats_home_away["Home Losses"] / arsenal_stats_home_away["Home Games"]) * 100
+
+# Calculate the percentages for away match outcomes:
+away_win_pct = (arsenal_stats_home_away["Away Wins"] / arsenal_stats_home_away["Away Games"]) * 100
+away_draw_pct = (arsenal_stats_home_away["Away Draws"] / arsenal_stats_home_away["Away Games"]) * 100
+away_loss_pct = (arsenal_stats_home_away["Away Losses"] / arsenal_stats_home_away["Away Games"]) * 100
+
+# Get the season labels from the index of arsenal_stats_home_away
+labels = arsenal_stats_home_away.index  
+x = np.arange(len(labels))  # x locations for the labels
+width = 0.35  # width of the bars
+
+# Create a figure and axis for the bar chart
+fig, ax = plt.subplots(figsize=(10,6))
+
+# Plot stacked bar chart for home matches (Wins, Draws, Losses)
+ax.bar(x - width/2, home_win_pct, width, label="Home Win %", color="blue")
+ax.bar(x - width/2, home_draw_pct, width, bottom=home_win_pct, label="Home Draw %", color="green", alpha=0.7)
+ax.bar(x - width/2, home_loss_pct, width, bottom=(home_win_pct + home_draw_pct), label="Home Loss %", color="red", alpha=0.7)
+
+# Plot stacked bar chart for away matches (Wins, Draws, Losses)
+ax.bar(x + width/2, away_win_pct, width, label="Away Win %", color="cyan")
+ax.bar(x + width/2, away_draw_pct, width, bottom=away_win_pct, label="Away Draw %", color="lightgreen", alpha=0.7)
+ax.bar(x + width/2, away_loss_pct, width, bottom=(away_win_pct + away_draw_pct), label="Away Loss %", color="magenta", alpha=0.7)
+
+# Set axis labels, title, and x-axis tick labels
+ax.set_xlabel("Season")
+ax.set_ylabel("Percentage")
+ax.set_title("Arsenal Home vs Away Match Outcome Percentages (Wins, Draws, Losses)")
+ax.set_xticks(x)
+ax.set_xticklabels(labels)
+ax.legend(loc="upper right", fontsize=8)
+ax.grid(axis="y")
+
+# Display the plot
+plt.show()
+
+
+arsenal_stats["Win Percentage"] = (arsenal_stats["G_wins"] / arsenal_stats["Games Played"]) * 100
+arsenal_stats["Loss Percentage"] = (arsenal_stats["G_losses"] / arsenal_stats["Games Played"]) * 100
+arsenal_stats["Draw Percentage"] = (arsenal_stats["G_Draws"] / arsenal_stats["Games Played"]) * 100
+
+plt.figure(figsize=(10,6))
+plt.plot(arsenal_stats.index, arsenal_stats["Win Percentage"], marker="o", label="Win %", color="green")
+plt.plot(arsenal_stats.index, arsenal_stats["Loss Percentage"], marker="o", label="Loss %", color="red")
+plt.plot(arsenal_stats.index, arsenal_stats["Draw Percentage"], marker="o", label="Draw %", color="blue")
+plt.xlabel("Season")
+plt.ylabel("Percentage")
+plt.title("Arsenal Performance Trends by Season")
+plt.legend()
+plt.grid(True)
+plt.show()
+
+import matplotlib.pyplot as plt
+
+# Get the list of seasons from the arsenal_stats DataFrame index
+seasons = arsenal_stats.index.tolist() 
+num_seasons = len(seasons)
+
+# Create a subplot with 1 row and a number of columns equal to the number of seasons
+fig, axes = plt.subplots(1, num_seasons, figsize=(4 * num_seasons, 4))
+# If there is only one season, ensure axes is a list
+if num_seasons == 1:
+    axes = [axes]
+
+# Define colors for the pie chart slices (green, blue, red)
+colors = ["#4CAF50", "#2196F3", "#F44336"]
+
+# Loop through each season and its corresponding subplot axis
+for ax, season in zip(axes, seasons):
+    # Extract the results for the specific season (wins, draws, losses)
+    results = arsenal_stats.loc[season, ["G_wins", "G_Draws", "G_losses"]]
+    total = results.sum()  # Calculate the total number of matches (or outcomes)
+    percentages = results / total * 100  # Compute the percentage for each outcome
+
+    # Plot a pie chart with the calculated percentages
+    ax.pie(percentages, labels=["Wins", "Draws", "Losses"], autopct='%1.1f%%', startangle=90, colors=colors)
+    ax.set_title(season)
+    ax.axis("equal")  # Ensure the pie chart is circular
+
+# Set a super title for the entire figure
+plt.suptitle("Arsenal Match Outcome Distribution by Season", fontsize=14)
+plt.tight_layout(rect=[0, 0, 1, 0.95])
+plt.show()
+
+## Conclusions
+
+- **Offensive Performance:**  
+  Over the analyzed seasons, Arsenal has shown a clear improvement in its attacking play. The data indicates that Arsenal is not only launching more attacks but also converting those opportunities into a higher number of goals, both at home and away. This increased offensive efficiency is reflected in the higher win percentages observed in each subsequent season.
+
+- **Defensive Performance:**  
+  Although there is a slight increase in the number of fouls committed, Arsenal has managed to consistently reduce the number of goals conceded from season to season. Moreover, the number of yellow and red cards received remains stable, suggesting that the team’s defensive discipline has been maintained even as its overall defensive effectiveness improves.
+
+- **Overall Team Performance:**  
+  The upward trend in win percentages is further supported by the team's improved final league positions over the seasons. For example:
+  - In the **2020/21** season, Arsenal finished in **8th** place.
+  - In the **2021/22** season, Arsenal improved to **5th** place.
+  - In both the **2022/23** and **2023/24** seasons, Arsenal secured **2nd** place.
+
+These standings provide compelling evidence that Arsenal's performance has progressively improved both offensively and defensively.
+
+**Summary:**  
+The analysis demonstrates that Arsenal has enhanced its tactical performance over the seasons. With a stronger attacking approach that results in more goals and a more robust defense that concedes fewer goals, the team has achieved a higher win percentage and better league standings. This positive evolution in performance is clearly visible when comparing the seasonal trends.
